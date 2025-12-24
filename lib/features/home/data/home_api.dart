@@ -10,7 +10,7 @@ class HomeApi {
     String max = '10',
   }) async {
     final uri = Uri.parse(
-      '${ApiConfig.baseUrl}/top-headlines'
+      '${ApiConfig.baseUrl}'
       '?country=us'
       '&lang=en'
       '&max=$max'
