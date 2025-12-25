@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../data/otp_manager.dart';
+import '../data/auth_local_storage.dart';
+import '../data/fake_auth_api.dart';
+import '../data/smtp_service.dart';
 
 class OtpPage extends StatefulWidget {
   final String email;
@@ -63,12 +67,27 @@ class _OtpPageState extends State<OtpPage> {
       return;
     }
 
-    // TODO: Verify OTP logic here
-    // If success:
-    context.go('/');
+    final email = widget.email;
+
+    if (OtpManager.verifyOtp(email, _otpCode)) {
+      OtpManager.clearOtp(email);
+      AuthLocalStorage.saveLogin(
+        email: email,
+        sessionToken: FakeAuthApi.createSession(email),
+      );
+      if (!mounted) return;
+      context.go('/');
+    } else {
+      _showError('Invalid OTP, please try again');
+    }
   }
 
   void _resendOtp() {
+    final email = widget.email;
+
+    final otp = OtpManager.generateOtp();
+    OtpManager.saveOtp(email, otp);
+    SmtpService.sendOtpEmail(toEmail: email, otp: otp);
     setState(() => _remainingSeconds = 56);
     _startTimer();
   }
@@ -167,7 +186,7 @@ class _OtpPageState extends State<OtpPage> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: _verifyOtp,
+                      onPressed: _otpCode.length == 4 ? _verifyOtp : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         shape: RoundedRectangleBorder(

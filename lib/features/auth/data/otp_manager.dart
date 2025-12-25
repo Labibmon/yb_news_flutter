@@ -1,26 +1,28 @@
 import 'dart:math';
 
 class OtpManager {
-  static String? _otp;
-  static DateTime? _expiredAt;
-
-  static String generateOtp() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final rand = Random();
-
-    _otp = List.generate(8, (_) => chars[rand.nextInt(chars.length)]).join();
-
-    _expiredAt = DateTime.now().add(const Duration(minutes: 3));
-    return _otp!;
+  static final Map<String, String> _otpStorage = {}; // email -> OTP
+  
+  static void saveOtp(String email, String otp) {
+    _otpStorage[email] = otp;
   }
 
-  static bool verify(String input) {
-    if (_otp == null || _expiredAt == null) return false;
+  static bool verifyOtp(String email, String otp) {
+    return _otpStorage[email] == otp;
+  }
 
-    if (DateTime.now().isAfter(_expiredAt!)) {
-      throw Exception('OTP expired');
+  static void clearOtp(String email) {
+    _otpStorage.remove(email);
+  }
+  
+  static String generateOtp({int length = 4}) {
+    final random = Random();
+    String otp = '';
+
+    for (int i = 0; i < length; i++) {
+      otp += random.nextInt(10).toString(); // random digit 0-9
     }
 
-    return _otp == input;
+    return otp;
   }
 }

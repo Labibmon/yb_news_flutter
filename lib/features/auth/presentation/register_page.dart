@@ -1,76 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../data/fake_auth_api.dart';
-import '../data/auth_local_storage.dart';
-import '../data/otp_manager.dart';
-import '../data/smtp_service.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
+  final _emailConfirmationController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
-  bool _rememberMe = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _emailConfirmationController.dispose();
     super.dispose();
   }
 
   void _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final email = _emailController.text;
-
-    // Prevent multi-device login
-    if (FakeAuthApi.hasActiveSession(email)) {
-      if (!mounted) return;
-      _showError('User already logged in on another device');
-      return;
-    }
-
-    final isFirstLoginDone = AuthLocalStorage.isFirstLoginDone;
-
-    if (!isFirstLoginDone) {
-      // FIRST LOGIN → OTP
-      final otp = OtpManager.generateOtp();
-      OtpManager.saveOtp(email, otp);
-
-      try {
-        await SmtpService.sendOtpEmail(toEmail: email, otp: otp);
-
-        if (!mounted) return;
-        context.go('/otp', extra: email);
-      } catch (e) {
-        if (!mounted) return;
-        _showError('Failed to send OTP email');
-      }
-    } else {
-      // ALREADY LOGIN → HOME
-      final token = FakeAuthApi.createSession(email);
-
-      AuthLocalStorage.saveLogin(email: email, sessionToken: token);
-
-      if (!mounted) return;
-      context.go('/');
-    }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
+    context.go('/login');
   }
 
   @override
@@ -111,19 +67,17 @@ class _LoginPageState extends State<LoginPage> {
                       style: TextStyle(
                         fontSize: 48,
                         fontWeight: FontWeight.bold,
-                        // decoration: TextDecoration.underline,
                         decorationThickness: 3,
                         decorationColor: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Again!',
+                      'Signup to get Started',
                       style: TextStyle(
-                        fontSize: 48,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                        // decoration: TextDecoration.underline,
+                        color: Color.fromRGBO(78, 75, 102, 1),
                         decorationThickness: 3,
                         decorationColor: Colors.blue,
                       ),
@@ -144,6 +98,28 @@ class _LoginPageState extends State<LoginPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const Text(
+                            'Email Confirmation*',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _emailConfirmationController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: _inputDecoration(),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Email is required';
+                              }
+                              if (!value.contains('@')) {
+                                return 'Invalid email format';
+                              }
+                              return null;
+                            },
+                          ),
+
+                          const SizedBox(height: 20),
+
                           const Text(
                             'Email*',
                             style: TextStyle(fontWeight: FontWeight.w600),
@@ -199,33 +175,8 @@ class _LoginPageState extends State<LoginPage> {
                             },
                           ),
 
-                          const SizedBox(height: 16),
-
-                          // Remember + Forgot
-                          Row(
-                            children: [
-                              Checkbox(
-                                value: _rememberMe,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _rememberMe = value ?? false;
-                                  });
-                                },
-                              ),
-                              const Text('Remember me'),
-                              const Spacer(),
-                              TextButton(
-                                onPressed: () {
-                                  context.go('/forgot-password');
-                                },
-                                child: const Text('Forgot the password ?'),
-                              ),
-                            ],
-                          ),
-
                           const SizedBox(height: 24),
 
-                          // LOGIN BUTTON
                           SizedBox(
                             width: double.infinity,
                             height: 52,
@@ -238,7 +189,7 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               child: const Text(
-                                'Login',
+                                'Register',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -287,13 +238,13 @@ class _LoginPageState extends State<LoginPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text("don’t have an account ? "),
+                              const Text("Already have an account ?"),
                               GestureDetector(
                                 onTap: () {
-                                  context.go('/register');
+                                  context.go('/login');
                                 },
                                 child: const Text(
-                                  'Sign Up',
+                                  'Login',
                                   style: TextStyle(
                                     color: Colors.blue,
                                     fontWeight: FontWeight.bold,
